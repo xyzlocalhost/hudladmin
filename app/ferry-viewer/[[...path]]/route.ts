@@ -46,17 +46,18 @@ const HUDL_AUDIO_SHIM_JS = `
 const HUDL_WSS_SHIM_JS = `
 (function () {
   var host = ${JSON.stringify(ID_HOST)};
-  var ip = ${JSON.stringify(RELAY_IP)};
-  if (!host || !ip || typeof WebSocket === "undefined") return;
+  if (!host || typeof WebSocket === "undefined") return;
   var Orig = WebSocket;
   function wrap(url) {
     if (typeof url !== "string") return url;
-    return url
-      .replace("wss://" + ip + ":", "wss://" + host + ":")
-      .replace("ws://" + ip + ":", "wss://" + host + ":");
+    // Any IPv4 host in ws/wss → our TLS hostname (SNI must match cert).
+    return url.replace(/^(wss?):\\/\\/(\\d{1,3}(?:\\.\\d{1,3}){3})(?=:|\\/|$)/i, "wss://" + host);
   }
   function HudlWebSocket(url, protocols) {
     var fixed = wrap(url);
+    if (typeof console !== "undefined" && fixed !== url) {
+      console.info("[hudl] wss rewrite", url, "→", fixed);
+    }
     if (arguments.length > 1) return new Orig(fixed, protocols);
     return new Orig(fixed);
   }
@@ -65,7 +66,23 @@ const HUDL_WSS_SHIM_JS = `
   HudlWebSocket.OPEN = Orig.OPEN;
   HudlWebSocket.CLOSING = Orig.CLOSING;
   HudlWebSocket.CLOSED = Orig.CLOSED;
-  window.WebSocket = HudlWebSocket;
+  try {
+    Object.defineProperty(window, "WebSocket", { configurable: true, writable: true, value: HudlWebSocket });
+    Object.defineProperty(globalThis, "WebSocket", { configurable: true, writable: true, value: HudlWebSocket });
+  } catch (_) {
+    window.WebSocket = HudlWebSocket;
+  }
+})();
+`.trim();
+
+const HUDL_HEAD_BOOT_JS = `
+(function () {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      regs.forEach(function (r) { r.unregister(); });
+    }).catch(function () {});
+  }
+  ${HUDL_WSS_SHIM_JS}
 })();
 `.trim();
 
@@ -142,7 +159,8 @@ function ferryCsp(): string {
   const hostname = new URL(UPSTREAM).hostname;
   return [
     "default-src 'self'",
-    "script-src 'self'",
+    // unsafe-inline: early head boot (WebSocket rewrite + SW kill) before Ferry modules.
+    "script-src 'self' 'unsafe-inline'",
     "worker-src 'self' blob:",
     // Ferry talks to hbbs/hbbr on 21118/21119; keep this broad so ws ports aren't CSP-blocked.
     `connect-src 'self' ws: wss: http://${hostname}:* https://${hostname}:* ws://${hostname}:* wss://${hostname}:*`,
@@ -179,6 +197,13 @@ function rewriteHtmlAssets(html: string): string {
   if (!/<base\s/i.test(out)) {
     out = out.replace(/<head([^>]*)>/i, `<head$1>\n    <base href="${VIEWER_PREFIX}/" />`);
   }
+  // Inline first: kill SW + patch WebSocket before any Ferry module runs.
+  if (!out.includes("[hudl] wss rewrite") && !out.includes("HudlWebSocket")) {
+    out = out.replace(
+      /<head([^>]*)>/i,
+      `<head$1>\n    <script>${HUDL_HEAD_BOOT_JS}</script>`,
+    );
+  }
   out = out.replace(
     /\b(href|src)=["'](?!https?:|\/\/|\/|#|data:|blob:|mailto:)([^"']+)["']/gi,
     (_m, attr: string, path: string) => `${attr}="${VIEWER_PREFIX}/${path.replace(/^\.\//, "")}"`,
@@ -188,17 +213,13 @@ function rewriteHtmlAssets(html: string): string {
     /\b(href|src)="(\/ferry-viewer\/(?:config\.js|app\.js|sw\.js)[^"]*)"/gi,
     (_m, attr: string, path: string) => {
       const sep = path.includes("?") ? "&" : "?";
-          return `${attr}="${path}${sep}v=rd2"`;
+      return `${attr}="${path}${sep}v=rd3"`;
     },
   );
-  if (!out.includes("hudl-wss-shim.js")) {
+  if (!out.includes("hudl-audio-shim.js")) {
     out = out.replace(
       /<script[^>]*src="[^"]*config\.js[^"]*"[^>]*><\/script>/i,
-      [
-        `<script src="${VIEWER_PREFIX}/hudl-wss-shim.js"></script>`,
-        `<script src="${VIEWER_PREFIX}/hudl-audio-shim.js"></script>`,
-        "$&",
-      ].join("\n    "),
+      `<script src="${VIEWER_PREFIX}/hudl-audio-shim.js"></script>\n    $&`,
     );
   }
   if (!out.includes("hudl-bootstrap.js")) {
@@ -283,7 +304,32 @@ async function proxyFerry(req: NextRequest, pathParts: string[] | undefined) {
   if (contentType.includes("text/html")) {
     const html = rewriteHtmlAssets(await upstream.text());
     headers.delete("content-length");
+    headers.set("cache-control", "no-store");
+    headers.delete("etag");
     return new NextResponse(html, { status: upstream.status, headers });
+  }
+
+  // Neutralize Ferry's service worker so it can't serve a stale shell.
+  if (suffix === "sw.js" || suffix.startsWith("sw.js?")) {
+    headers.set("content-type", "application/javascript; charset=utf-8");
+    headers.set("cache-control", "no-store");
+    return new NextResponse("/* hudl: service worker disabled */\n", {
+      status: 200,
+      headers,
+    });
+  }
+
+  if (suffix === "app.js" || suffix.startsWith("app.js")) {
+    let body = await upstream.text();
+    body = body.replace(
+      /navigator\.serviceWorker\.register\([^)]*\)/g,
+      "Promise.resolve()",
+    );
+    headers.set("content-type", "application/javascript; charset=utf-8");
+    headers.set("cache-control", "no-store");
+    headers.delete("content-length");
+    headers.delete("etag");
+    return new NextResponse(body, { status: upstream.status, headers });
   }
 
   // TLS-only ID/relay on Caddy — pin host + wss (ignore stale IP in upstream config).
