@@ -13,6 +13,9 @@ const UPSTREAM = (
 ).replace(/\/$/, "");
 
 const VIEWER_PREFIX = "/ferry-viewer";
+const ID_HOST = new URL(UPSTREAM).hostname;
+/** EIP hbbs sometimes returns as relay — must use hostname for TLS SNI. */
+const RELAY_IP = process.env.RUSTDESK_RELAY_IP || "16.16.254.57";
 
 /** Soften AudioWorklet crash when a secure context still lacks a worklet path. */
 const HUDL_AUDIO_SHIM_JS = `
@@ -33,6 +36,36 @@ const HUDL_AUDIO_SHIM_JS = `
       this.disconnect = function () {};
     };
   }
+})();
+`.trim();
+
+/**
+ * hbbs often hands clients the relay as a bare IP. Caddy certs are hostname-only,
+ * so rewrite wss://EIP:2111x → wss://rd.hudlapp.com:2111x before connect.
+ */
+const HUDL_WSS_SHIM_JS = `
+(function () {
+  var host = ${JSON.stringify(ID_HOST)};
+  var ip = ${JSON.stringify(RELAY_IP)};
+  if (!host || !ip || typeof WebSocket === "undefined") return;
+  var Orig = WebSocket;
+  function wrap(url) {
+    if (typeof url !== "string") return url;
+    return url
+      .replace("wss://" + ip + ":", "wss://" + host + ":")
+      .replace("ws://" + ip + ":", "wss://" + host + ":");
+  }
+  function HudlWebSocket(url, protocols) {
+    var fixed = wrap(url);
+    if (arguments.length > 1) return new Orig(fixed, protocols);
+    return new Orig(fixed);
+  }
+  HudlWebSocket.prototype = Orig.prototype;
+  HudlWebSocket.CONNECTING = Orig.CONNECTING;
+  HudlWebSocket.OPEN = Orig.OPEN;
+  HudlWebSocket.CLOSING = Orig.CLOSING;
+  HudlWebSocket.CLOSED = Orig.CLOSED;
+  window.WebSocket = HudlWebSocket;
 })();
 `.trim();
 
@@ -155,13 +188,17 @@ function rewriteHtmlAssets(html: string): string {
     /\b(href|src)="(\/ferry-viewer\/(?:config\.js|app\.js|sw\.js)[^"]*)"/gi,
     (_m, attr: string, path: string) => {
       const sep = path.includes("?") ? "&" : "?";
-      return `${attr}="${path}${sep}v=rd1"`;
+          return `${attr}="${path}${sep}v=rd2"`;
     },
   );
-  if (!out.includes("hudl-audio-shim.js")) {
+  if (!out.includes("hudl-wss-shim.js")) {
     out = out.replace(
       /<script[^>]*src="[^"]*config\.js[^"]*"[^>]*><\/script>/i,
-      `<script src="${VIEWER_PREFIX}/hudl-audio-shim.js"></script>\n    $&`,
+      [
+        `<script src="${VIEWER_PREFIX}/hudl-wss-shim.js"></script>`,
+        `<script src="${VIEWER_PREFIX}/hudl-audio-shim.js"></script>`,
+        "$&",
+      ].join("\n    "),
     );
   }
   if (!out.includes("hudl-bootstrap.js")) {
@@ -189,6 +226,17 @@ async function proxyFerry(req: NextRequest, pathParts: string[] | undefined) {
 
   if (suffix === "hudl-audio-shim.js") {
     return new NextResponse(HUDL_AUDIO_SHIM_JS, {
+      status: 200,
+      headers: {
+        "content-type": "application/javascript; charset=utf-8",
+        "cache-control": "no-store",
+        "content-security-policy": ferryCsp(),
+      },
+    });
+  }
+
+  if (suffix === "hudl-wss-shim.js") {
+    return new NextResponse(HUDL_WSS_SHIM_JS, {
       status: 200,
       headers: {
         "content-type": "application/javascript; charset=utf-8",
