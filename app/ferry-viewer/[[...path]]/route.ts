@@ -96,6 +96,16 @@ const HUDL_BOOTSTRAP_JS = `
   }
   var MSG = "hudl:connect";
   var started = false;
+  var wasLive = false;
+  var endedSent = false;
+
+  function notifyParent(type, extra) {
+    try {
+      if (!window.parent || window.parent === window) return;
+      var payload = Object.assign({ type: type }, extra || {});
+      window.parent.postMessage(payload, window.location.origin);
+    } catch (_) {}
+  }
 
   function setVal(el, v) {
     var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
@@ -133,11 +143,35 @@ const HUDL_BOOTSTRAP_JS = `
   function tryConnect(id, password) {
     if (!id || started) return;
     started = true;
+    wasLive = false;
+    endedSent = false;
     var n = 0;
     var t = setInterval(function () {
       n += 1;
       if (fill(id, password) || n > 80) clearInterval(t);
     }, 100);
+  }
+
+  function watchSession() {
+    var form = document.querySelector("form.connect-form");
+    var canvas = document.querySelector("canvas");
+    var text = (document.body && document.body.innerText) || "";
+    var inSession = !form && !!(canvas || /Connecting to|Remote screen|Keys/i.test(text));
+    if (inSession) {
+      wasLive = true;
+      return;
+    }
+    // Back on Ferry connect UI after a live session → tell Hudl to close the viewer.
+    if (wasLive && form && !endedSent) {
+      endedSent = true;
+      wasLive = false;
+      started = false;
+      notifyParent("hudl:session-ended", {
+        reason: /was lost|ended the connection|Could not connect/i.test(text)
+          ? "remote-ended"
+          : "disconnected",
+      });
+    }
   }
 
   window.addEventListener("message", function (e) {
@@ -152,6 +186,8 @@ const HUDL_BOOTSTRAP_JS = `
     var qid = q.get("id");
     if (qid) tryConnect(qid, q.get("password") || "");
   } catch (_) {}
+
+  setInterval(watchSession, 350);
 })();
 `.trim();
 
@@ -213,7 +249,7 @@ function rewriteHtmlAssets(html: string): string {
     /\b(href|src)="(\/ferry-viewer\/(?:config\.js|app\.js|sw\.js)[^"]*)"/gi,
     (_m, attr: string, path: string) => {
       const sep = path.includes("?") ? "&" : "?";
-      return `${attr}="${path}${sep}v=rd3"`;
+          return `${attr}="${path}${sep}v=rd4"`;
     },
   );
   if (!out.includes("hudl-audio-shim.js")) {

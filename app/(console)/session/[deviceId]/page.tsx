@@ -73,6 +73,24 @@ export default function SessionDevicePage() {
     return () => document.removeEventListener("fullscreenchange", onFs);
   }, []);
 
+  // Ferry iframe reports session end — close viewer so Hudl doesn't stay "Connected".
+  useEffect(() => {
+    if (!viewerOpen) return;
+    function onFerryMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      if (!event.data || event.data.type !== "hudl:session-ended") return;
+      setViewerOpen(false);
+      setViewerLoading(false);
+      fireToast(
+        event.data.reason === "remote-ended"
+          ? "Remote session ended."
+          : "Disconnected.",
+      );
+    }
+    window.addEventListener("message", onFerryMessage);
+    return () => window.removeEventListener("message", onFerryMessage);
+  }, [viewerOpen, fireToast]);
+
   useEffect(() => {
     offlineWarned.current = false;
     setFilesOpen(false);
