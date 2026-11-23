@@ -18,32 +18,36 @@ export default function SessionDevicePage() {
   const router = useRouter();
   const { devices, loading } = useFleetContext();
   const { fireToast } = useToast();
-  const { launchRustDesk } = useOpenSession();
+  const { rustdeskWebViewerUrl } = useOpenSession();
 
   const sel = devices.find((d) => d.id === deviceId) ?? null;
   const offlineWarned = useRef(false);
 
-  const [clock, setClock] = useState("");
   const [fullControl, setFullControl] = useState(true);
   const [keyboardOn, setKeyboardOn] = useState(false);
   const [filesOpen, setFilesOpen] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
   const [streamQuality, setStreamQuality] = useState(0);
   const [isFs, setIsFs] = useState(false);
   const rdpRef = useRef<HTMLDivElement>(null);
+  const viewerBase = rustdeskWebViewerUrl();
 
-  useEffect(() => {
-    const tick = () => {
-      const n = new Date();
-      let h = n.getHours();
-      const m = String(n.getMinutes()).padStart(2, "0");
-      const ap = h >= 12 ? "PM" : "AM";
-      h = h % 12 || 12;
-      setClock(`${h}:${m} ${ap}`);
-    };
-    tick();
-    const t = setInterval(tick, 10000);
-    return () => clearInterval(t);
-  }, []);
+  function startConnect() {
+    if (!sel?.rustdeskId) {
+      fireToast("Remote not ready. On that laptop: cd client; .\\run.ps1");
+      return;
+    }
+    setFilesOpen(false);
+    setViewerOpen(true);
+    if (sel.rustdeskPassword && navigator.clipboard?.writeText) {
+      void navigator.clipboard.writeText(sel.rustdeskPassword).then(
+        () => fireToast("Password copied — paste it in the viewer if asked."),
+        () => fireToast("Viewer open — use the password from the laptop setup if asked."),
+      );
+    } else {
+      fireToast("Viewer open in this panel.");
+    }
+  }
 
   useEffect(() => {
     const onFs = () => setIsFs(!!document.fullscreenElement);
@@ -56,6 +60,7 @@ export default function SessionDevicePage() {
     setFullControl(true);
     setKeyboardOn(false);
     setFilesOpen(false);
+    setViewerOpen(false);
     setStreamQuality(0);
   }, [deviceId]);
 
@@ -140,50 +145,95 @@ export default function SessionDevicePage() {
           <span className="m">Latency <b>{fmtPing(sel)}</b></span>
           <span className="m">Stream <b>{streamModes[streamQuality]}</b></span>
           <span className="m">Seen <b>{sel.lastSeen}</b></span>
-          {sel.rustdeskId && <span className="m">RustDesk <b>{sel.rustdeskId}</b></span>}
+          {sel.rustdeskId && <span className="m">Remote ID <b>{sel.rustdeskId}</b></span>}
           <span className={`chip ${sel.status === "online" ? "ok" : sel.status === "stale" ? "neutral" : "off"}`}>
             {statusLabel(sel.status)}
           </span>
-          <button className="btn primary small" type="button" onClick={() => launchRustDesk(sel)}>
-            Open RustDesk
+          <button
+            className="btn primary small"
+            type="button"
+            disabled={!sel.rustdeskId}
+            onClick={startConnect}
+          >
+            Connect
           </button>
         </div>
       </div>
 
       <div className="rdp" ref={rdpRef}>
         <div className="rdp-screen">
-          <div className="desktop-icons">
-            <div className="dicon"><div className="box"><Ic name="folder" /></div><span>Projects</span></div>
-            <div className="dicon"><div className="box"><Ic name="doc" /></div><span>Docs</span></div>
-            <div className="dicon"><div className="box"><Ic name="globe" /></div><span>Browser</span></div>
-            <div className="dicon"><div className="box"><Ic name="terminal" /></div><span>Terminal</span></div>
-          </div>
+          {viewerOpen && !filesOpen && (
+            <div className="session-viewer">
+              <div className="session-viewer-bar">
+                <span>
+                  Controlling <b>{sel.name}</b>
+                  {sel.rustdeskId ? ` · ID ${sel.rustdeskId}` : ""}
+                </span>
+                <div className="session-viewer-acts">
+                  {sel.rustdeskPassword && (
+                    <button
+                      className="btn small"
+                      type="button"
+                      onClick={() => {
+                        void navigator.clipboard?.writeText(sel.rustdeskPassword || "").then(
+                          () => fireToast("Password copied"),
+                          () => fireToast(sel.rustdeskPassword || ""),
+                        );
+                      }}
+                    >
+                      Copy password
+                    </button>
+                  )}
+                  <button className="btn small" type="button" onClick={() => setViewerOpen(false)}>
+                    Close viewer
+                  </button>
+                </div>
+              </div>
+              <iframe
+                className="session-viewer-frame"
+                title={`Remote ${sel.name}`}
+                src={`${viewerBase}/`}
+                allow="clipboard-read; clipboard-write; fullscreen"
+              />
+            </div>
+          )}
 
-          <div className="win win1">
-            <div className="win-bar">
-              <i style={{ background: "#ff6058" }} /><i style={{ background: "#ffbd2e" }} /><i style={{ background: "#28c840" }} />
-              <span className="t">Terminal — PowerShell</span>
+          {!viewerOpen && !filesOpen && (
+            <div className="session-stage">
+              <div className="session-stage-card">
+                <Ic name="monitor" />
+                {sel.rustdeskId && sel.rustdeskPassword ? (
+                  <>
+                    <strong>Ready to control {sel.name}</strong>
+                    <span>
+                      Connect opens the remote desktop <em>inside this page</em> (no second app on your phone/PC).
+                      The laptop already has unattended access — no approve click there.
+                    </span>
+                    <button className="btn primary" type="button" onClick={startConnect}>
+                      Connect now
+                    </button>
+                  </>
+                ) : sel.rustdeskId ? (
+                  <>
+                    <strong>ID known — password not synced yet</strong>
+                    <span>
+                      On the laptop run <code>cd client; .\run.ps1</code> once as Admin, wait one heartbeat, then Connect.
+                    </span>
+                    <button className="btn primary" type="button" onClick={startConnect}>
+                      Open viewer anyway
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <strong>Remote not set up on this laptop yet</strong>
+                    <span>
+                      On {sel.name}: <code>cd client; .\run.ps1</code> once (Admin). That one command installs RustDesk + starts the Hudl agent.
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
-            <div className="body">
-              <p><span className="c">PS {sel.hostname}&gt;</span> git status</p>
-              <p style={{ color: "#aab6c6" }}>On branch main · clean</p>
-              <p><span className="c">PS {sel.hostname}&gt;</span> git push origin main</p>
-              <p style={{ color: "#8fe0b0" }}>Pushed. CI will deploy.</p>
-              <p><span className="c">PS {sel.hostname}&gt;</span> <span style={{ color: "#e0a43b" }}>█</span></p>
-            </div>
-          </div>
-
-          <div className="win win2">
-            <div className="win-bar">
-              <i style={{ background: "#ff6058" }} /><i style={{ background: "#ffbd2e" }} /><i style={{ background: "#28c840" }} />
-              <span className="t">Cursor — agent</span>
-            </div>
-            <div className="body">
-              <div className="row"><div className="sq" /><div style={{ flex: 1 }}><div className="wl" style={{ width: "78%" }} /></div></div>
-              <div className="row"><div className="sq" /><div style={{ flex: 1 }}><div className="wl g" style={{ width: "58%" }} /></div></div>
-              <div className="row"><div className="sq" /><div style={{ flex: 1 }}><div className="wl" style={{ width: "66%" }} /></div></div>
-            </div>
-          </div>
+          )}
 
           {filesOpen && (
             <FileExplorer
@@ -197,47 +247,52 @@ export default function SessionDevicePage() {
           {keyboardOn && (
             <div className="kb-hint">
               <Ic name="keyboard" sm />
-              Keyboard capture on — keys go to {sel.name}. Tap Keyboard again to release.
+              Use the in-page Connect viewer for keyboard/mouse on the remote desktop.
             </div>
           )}
-
-          <div className="taskbar">
-            <div className="tb-start"><Ic name="logo" /></div>
-            <div className="tb-app" /><div className="tb-app" /><div className="tb-app" />
-            <span className="tb-clock">{clock}</span>
-          </div>
         </div>
 
         <div className="rdp-controls">
           <button
             type="button"
+            className={viewerOpen ? "ctrl on" : "ctrl"}
+            disabled={!sel.rustdeskId}
+            onClick={() => (viewerOpen ? setViewerOpen(false) : startConnect())}
+          >
+            <Ic name="monitor" sm />Connect
+          </button>
+          <button
+            type="button"
             className={fullControl ? "ctrl on" : "ctrl"}
-            onClick={() => { setFullControl((v) => !v); fireToast(fullControl ? "View only." : "Full control on."); }}
+            onClick={() => { setFullControl((v) => !v); fireToast(fullControl ? "View only (when stream is live)." : "Full control preferred."); }}
           >
             <Ic name="menu" sm />Full control
           </button>
           <button
             type="button"
             className={keyboardOn ? "ctrl on" : "ctrl"}
-            onClick={() => { setKeyboardOn((v) => !v); fireToast(keyboardOn ? "Keyboard capture off." : "Keyboard capture on."); }}
+            onClick={() => { setKeyboardOn((v) => !v); fireToast(keyboardOn ? "Keyboard hint off." : "Keyboard hint on."); }}
           >
             <Ic name="keyboard" sm />Keyboard
           </button>
           <button
             type="button"
             className={filesOpen ? "ctrl on" : "ctrl"}
-            onClick={() => setFilesOpen((v) => !v)}
+            onClick={() => {
+              setFilesOpen((v) => !v);
+              if (!filesOpen) setViewerOpen(false);
+            }}
           >
             <Ic name="folder" sm />Files
           </button>
           <button
             type="button"
             className="ctrl"
-            title="Stream quality for Hudl's own remote video channel (bandwidth vs clarity)."
+            title="Placeholder for a future Hudl-native encoder."
             onClick={() => {
               const next = (streamQuality + 1) % streamModes.length;
               setStreamQuality(next);
-              fireToast(`Stream quality → ${streamModes[next]} (Hudl encoder).`);
+              fireToast(`Stream preference → ${streamModes[next]} (used when native stream ships).`);
             }}
           >
             <Ic name="quality" sm />Stream · {streamModes[streamQuality]}

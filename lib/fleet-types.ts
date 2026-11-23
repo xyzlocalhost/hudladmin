@@ -18,6 +18,8 @@ export type Device = {
   agentVersion: string;
   lanIp: string;
   rustdeskId?: string | null;
+  /** Unattended password — owner-only; used for one-click Connect deep links. */
+  rustdeskPassword?: string | null;
 };
 
 export type AlertKind =
@@ -63,6 +65,7 @@ export type DbDevice = {
   status: DeviceStatus;
   last_seen_at: string | null;
   rustdesk_id: string | null;
+  rustdesk_password: string | null;
   cpu: number | null;
   ram_used_gb: number | null;
   ram_total_gb: number | null;

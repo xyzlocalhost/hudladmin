@@ -28,6 +28,7 @@ export function mapDbDevice(row: DbDevice): Device {
     agentVersion: row.agent_version ?? "—",
     lanIp: row.lan_ip ?? "—",
     rustdeskId: row.rustdesk_id,
+    rustdeskPassword: row.rustdesk_password,
   };
 }
 

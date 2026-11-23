@@ -632,6 +632,38 @@ main::-webkit-scrollbar-thumb:hover, .sidebar::-webkit-scrollbar-thumb:hover, .e
 
 .kb-hint{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;background:rgba(12,18,26,.88);border:1px solid rgba(224,164,59,.35);color:#e8eef5;font-size:11px;white-space:nowrap;max-width:90%}
 
+.session-stage{
+  position:absolute;inset:0;display:grid;place-items:center;padding:24px;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(224,164,59,.08), transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(80,120,180,.08), transparent 45%),
+    linear-gradient(165deg, #0c0e12, #080a0e);
+}
+.session-stage-card{
+  width:min(440px,100%);text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;
+  padding:28px 24px;border-radius:16px;border:1px solid rgba(255,255,255,.1);
+  background:rgba(16,18,24,.92);box-shadow:0 24px 50px rgba(0,0,0,.45);
+}
+.session-stage-card .i{width:36px;height:36px;color:#e0a43b}
+.session-stage-card strong{font-size:16px;color:#f3efe7;font-weight:600}
+.session-stage-card span{font-size:12.5px;line-height:1.5;color:#9eb0c3;max-width:36ch}
+.session-stage-card code{
+  font-size:11px;padding:1px 6px;border-radius:6px;
+  background:rgba(255,255,255,.06);color:#e0a43b;font-family:ui-monospace,Consolas,monospace;
+}
+.session-stage-card .btn{margin-top:8px}
+.session-stage-card em{font-style:normal;color:#e0a43b}
+
+.session-viewer{position:absolute;inset:0;display:flex;flex-direction:column;min-height:0;z-index:4;background:#080a0e}
+.session-viewer-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(12,14,18,.96);
+  color:#c9d3df;font-size:12px;
+}
+.session-viewer-bar b{color:#f3efe7}
+.session-viewer-acts{display:flex;gap:6px;flex-wrap:wrap}
+.session-viewer-frame{flex:1;width:100%;border:0;min-height:0;background:#000}
+
 .iconbtn:disabled,.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
 
 .rdp:fullscreen,.rdp:-webkit-full-screen{width:100vw;height:100vh;border-radius:0;display:flex;flex-direction:column}

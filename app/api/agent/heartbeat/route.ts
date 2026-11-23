@@ -17,6 +17,7 @@ type Body = {
   os?: string | null;
   agent_version?: string | null;
   rustdesk_id?: string | null;
+  rustdesk_password?: string | null;
   name?: string | null;
 };
 
@@ -68,6 +69,9 @@ export async function POST(req: NextRequest) {
     if (body.os) patch.os = body.os;
     if (body.agent_version) patch.agent_version = body.agent_version;
     if (body.rustdesk_id) patch.rustdesk_id = body.rustdesk_id;
+    if (typeof body.rustdesk_password === "string" && body.rustdesk_password.length > 0) {
+      patch.rustdesk_password = body.rustdesk_password;
+    }
     if (body.name) patch.name = body.name;
 
     const { error: upErr } = await admin.from("devices").update(patch).eq("id", deviceId);

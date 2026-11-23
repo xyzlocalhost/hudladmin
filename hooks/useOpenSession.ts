@@ -5,37 +5,39 @@ import { useFleetContext } from "@/components/console/fleet-context";
 import { useToast } from "@/components/console/toast-context";
 import type { Device } from "@/lib/fleet-types";
 
+/** In-browser RustDesk viewer (Ferry on your self-hosted server). */
+export function rustdeskWebViewerUrl(): string {
+  return (
+    process.env.NEXT_PUBLIC_RUSTDESK_WEB_URL?.replace(/\/$/, "")
+    || "http://16.16.254.57:8080"
+  );
+}
+
 export function useOpenSession() {
   const { devices } = useFleetContext();
   const { fireToast } = useToast();
   const router = useRouter();
 
-  function launchRustDesk(d: Device) {
-    if (!d.rustdeskId) {
-      fireToast("No RustDesk ID yet. Phase 2: agent will publish it after RustDesk is installed.");
-      return;
-    }
-    const webBase = process.env.NEXT_PUBLIC_RUSTDESK_WEB_URL;
-    if (webBase) {
-      const url = `${webBase.replace(/\/$/, "")}/?id=${encodeURIComponent(d.rustdeskId)}`;
-      window.open(url, "_blank", "noopener,noreferrer");
-      fireToast(`Opening RustDesk web for ${d.name}`);
-      return;
-    }
-    window.location.href = `rustdesk://${encodeURIComponent(d.rustdeskId)}`;
-    fireToast(`Launching RustDesk app → ${d.rustdeskId}`);
-  }
-
   function openSession(id: string) {
     const d = devices.find((x) => x.id === id);
     if (!d) return;
     if (d.status === "offline") {
-      fireToast(`${d.name} is offline. Start the Hudl agent on that laptop — it shows up here on the next check-in.`);
+      fireToast(
+        `${d.name} is offline. On that laptop run: cd client; .\\run.ps1`,
+      );
       return;
     }
     router.push(`/session/${id}`);
-    if (d.rustdeskId) launchRustDesk(d);
   }
 
-  return { openSession, launchRustDesk, fireToast };
+  function launchRustDesk(d: Device) {
+    // Kept for compatibility — session page embeds the web viewer instead.
+    if (!d.rustdeskId) {
+      fireToast("Remote not ready. On that laptop run: cd client; .\\run.ps1 (Admin once).");
+      return;
+    }
+    fireToast(`Open Connect in the session view for ${d.name}.`);
+  }
+
+  return { openSession, launchRustDesk, rustdeskWebViewerUrl, fireToast };
 }

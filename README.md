@@ -34,9 +34,9 @@ Remote **Files** in a session uses the command queue (agent polls every ~2s). Bu
 
 See [`../client/README.md`](../client/README.md) for the Windows Python agent.
 
-## RustDesk Connect
+## Remote Connect (in browser)
 
-When a device row has `rustdesk_id`, **Connect** / **Open RustDesk** launches:
-
-- `NEXT_PUBLIC_RUSTDESK_WEB_URL/?id=…` if set, else
-- `rustdesk://{id}` deep link to the desktop/mobile app
+1. On each laptop (Admin once): `cd client; .\run.ps1` — one command for RustDesk + agent.
+2. Apply migration `20260323170000_rustdesk_password.sql`.
+3. Open AWS SG inbound: `8080/tcp`, `21118/tcp`, `21119/tcp` (plus existing 21115–21117).
+4. In Hudl session, **Connect** embeds the Ferry web viewer (`NEXT_PUBLIC_RUSTDESK_WEB_URL`, default `http://16.16.254.57:8080`) — no second app on your phone/PC.
