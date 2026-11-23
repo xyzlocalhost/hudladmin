@@ -3,7 +3,7 @@ import type { DeviceStatus } from "@/lib/fleet-types";
 export const titles: Record<string, [string, string]> = {
   overview: ["Overview", "Fleet health and machines ready to control."],
   devices: ["My devices", "Every laptop running the Hudl agent. Search, filter, connect."],
-  session: ["Remote screen", "Control the selected machine — stream, files, clipboard."],
+  session: ["Remote screen", "Control the selected machine — stream and files."],
   alerts: ["Alerts", "Missed check-ins, battery, disk, sessions, and vault events."],
   vault: ["Credential vault", "Your logins, scoped to devices — search scales past hundreds."],
   activity: ["Activity logs", "Sessions, agent signals, files, and vault access."],

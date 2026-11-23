@@ -38,7 +38,27 @@ export type FsWriteResult = {
   size: number;
 };
 
-export type FsCommandKind = "fs.roots" | "fs.list" | "fs.read" | "fs.write";
+export type FsStageResult = {
+  path: string;
+  name: string;
+  size: number;
+  storagePath: string;
+  downloadUrl?: string;
+};
 
-/** Soft cap for open/upload over the command queue (base64). Media previews need headroom. */
+export type FsCommandKind =
+  | "fs.roots"
+  | "fs.list"
+  | "fs.read"
+  | "fs.write"
+  | "fs.stage"
+  | "fs.mkdir"
+  | "fs.delete"
+  | "fs.copy"
+  | "fs.move";
+
+/** Soft cap for in-app open / base64 preview. */
 export const FS_MAX_TRANSFER_BYTES = 32 * 1024 * 1024;
+
+/** Cap for staged downloads (binary → Storage → signed URL). */
+export const FS_MAX_DOWNLOAD_BYTES = 512 * 1024 * 1024;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { hashToken, safeEqual } from "@/lib/agent-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { purgeStaleTransfers } from "@/lib/transfer-store";
 
 export const runtime = "nodejs";
 
@@ -113,6 +114,13 @@ export async function POST(req: NextRequest) {
           unread: true,
         });
       }
+    }
+
+    // Opportunistic GC so failed/abandoned transfers don't fill the bucket.
+    if (Math.random() < 0.15) {
+      void purgeStaleTransfers(admin).catch((err) =>
+        console.warn("[heartbeat] transfer purge", err),
+      );
     }
 
     return NextResponse.json({ ok: true, at: now });

@@ -30,7 +30,7 @@ Without Supabase env vars the UI runs on **mock fleet** data (no login gate).
 | POST | `/api/agent/commands/:id/complete` | device headers — agent posts result |
 | POST | `/api/devices/:id/fs` | owner session — `roots` / `list` / `read` / `write` (waits for agent) |
 
-Remote **Files** in a session uses the command queue (agent polls every ~2s). Built-in openers: Notepad, images, PDF, **WebM/MP4 video**, audio. Transfers capped at 32 MB.
+Remote **Files** in a session uses the command queue (agent polls every ~2s). Built-in openers: Notepad, images, PDF, **WebM/MP4 video**, audio. **Open/preview ≤32 MB**; **Download ≤512 MB** via binary stage + signed URL (browser streams to disk). Also: new folder, delete, copy/cut/paste (right‑click). Staging bucket `device-transfers` is ephemeral (delete-after-use + 1h sweep).
 
 See [`../client/README.md`](../client/README.md) for the Windows Python agent.
 

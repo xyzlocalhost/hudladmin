@@ -26,14 +26,6 @@ export default function SessionDevicePage() {
   const [clock, setClock] = useState("");
   const [fullControl, setFullControl] = useState(true);
   const [keyboardOn, setKeyboardOn] = useState(false);
-  const [clipSync, setClipSync] = useState(true);
-  const [clipPanel, setClipPanel] = useState(false);
-  const [clipHistory, setClipHistory] = useState([
-    { id: "c1", text: "git push origin main", from: "This phone", at: "9:11 PM" },
-    { id: "c2", text: "https://github.com/you/hudl", from: "Home Desk", at: "9:08 PM" },
-    { id: "c3", text: "sk-demo-not-real", from: "This phone", at: "Yesterday" },
-  ]);
-  const [clipCurrent, setClipCurrent] = useState("git push origin main");
   const [filesOpen, setFilesOpen] = useState(false);
   const [streamQuality, setStreamQuality] = useState(0);
   const [isFs, setIsFs] = useState(false);
@@ -63,8 +55,6 @@ export default function SessionDevicePage() {
     offlineWarned.current = false;
     setFullControl(true);
     setKeyboardOn(false);
-    setClipSync(true);
-    setClipPanel(false);
     setFilesOpen(false);
     setStreamQuality(0);
   }, [deviceId]);
@@ -87,18 +77,6 @@ export default function SessionDevicePage() {
       }
     } catch {
       fireToast("Fullscreen was blocked by the browser.");
-    }
-  }
-
-  function copyText(label: string, value: string) {
-    const run = navigator.clipboard?.writeText(value);
-    if (run) {
-      run.then(
-        () => fireToast(`Copied ${label}`),
-        () => fireToast(`Could not copy ${label}`),
-      );
-    } else {
-      fireToast(`${label}: ${value}`);
     }
   }
 
@@ -216,50 +194,6 @@ export default function SessionDevicePage() {
             />
           )}
 
-          {clipPanel && (
-            <div className="clip-panel">
-              <div className="clip-head">
-                <div>
-                  <strong>Clipboard</strong>
-                  <span>OS clipboard holds one value. Hudl can sync that live, and keep a short session history here for you.</span>
-                </div>
-                <button className="iconbtn sm" type="button" onClick={() => setClipPanel(false)}><Ic name="close" sm /></button>
-              </div>
-              <label className="switchrow">
-                <input type="checkbox" checked={clipSync} onChange={(e) => { setClipSync(e.target.checked); fireToast(e.target.checked ? "Live clipboard sync on." : "Live clipboard sync off."); }} />
-                <span>Sync current clipboard with {sel.name}</span>
-              </label>
-              <div className="clip-current">
-                <div className="lbl">CURRENT</div>
-                <code>{clipCurrent}</code>
-                <div className="clip-acts">
-                  <button className="btn small" type="button" onClick={() => copyText("clipboard", clipCurrent)}>Copy here</button>
-                  <button className="btn small" type="button" onClick={() => fireToast(`Sent current clipboard to ${sel.name}.`)}>Send to device</button>
-                </div>
-              </div>
-              <div className="lbl" style={{ marginTop: 12 }}>SESSION HISTORY</div>
-              <ul className="clip-hist">
-                {clipHistory.map((c) => (
-                  <li key={c.id}>
-                    <code>{c.text}</code>
-                    <small>{c.from} · {c.at}</small>
-                    <button
-                      className="btn small"
-                      type="button"
-                      onClick={() => {
-                        setClipCurrent(c.text);
-                        setClipHistory((h) => [{ id: `c${Date.now()}`, text: c.text, from: "This phone", at: "now" }, ...h.filter((x) => x.id !== c.id)].slice(0, 8));
-                        fireToast("Set as current clipboard.");
-                      }}
-                    >
-                      Use
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
           {keyboardOn && (
             <div className="kb-hint">
               <Ic name="keyboard" sm />
@@ -291,15 +225,8 @@ export default function SessionDevicePage() {
           </button>
           <button
             type="button"
-            className={clipPanel || clipSync ? "ctrl on" : "ctrl"}
-            onClick={() => { setClipPanel((v) => !v); setFilesOpen(false); }}
-          >
-            <Ic name="clipboard" sm />Clipboard
-          </button>
-          <button
-            type="button"
             className={filesOpen ? "ctrl on" : "ctrl"}
-            onClick={() => { setFilesOpen((v) => !v); setClipPanel(false); }}
+            onClick={() => setFilesOpen((v) => !v)}
           >
             <Ic name="folder" sm />Files
           </button>

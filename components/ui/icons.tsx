@@ -22,6 +22,7 @@ export const icons: Record<string, ReactNode> = {
   menu: (<path d="M4 6h16M4 12h16M4 18h10" />),
   keyboard: (<><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M6 9h.01M10 9h.01M14 9h.01M8 13h8" /></>),
   clipboard: (<><rect x="9" y="3" width="6" height="4" rx="1" /><rect x="5" y="5" width="14" height="16" rx="2" /></>),
+  cut: (<path d="M6 9a3 3 0 100-6 3 3 0 000 6zm0 12a3 3 0 100-6 3 3 0 000 6zM20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12" />),
   fullscreen: (<path d="M8 3H5a2 2 0 00-2 2v3M16 3h3a2 2 0 012 2v3M8 21H5a2 2 0 01-2-2v-3M16 21h3a2 2 0 002-2v-3" />),
   close: (<path d="M18 6 6 18M6 6l12 12" />),
   eye: (<><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3" /></>),

@@ -58,16 +58,16 @@ svg{display:block}
 main{flex:1;min-width:0;min-height:0;height:100%;overflow-y:auto;overscroll-behavior:contain;padding:28px clamp(16px,3vw,40px) 46px;width:100%}
 
 /* dark scrollbars — main + sidebar */
-main, .sidebar, .explorer-list, .clip-hist{
+main, .sidebar, .explorer-list{
   scrollbar-width:thin;
   scrollbar-color:#3A342A transparent;
 }
-main::-webkit-scrollbar, .sidebar::-webkit-scrollbar, .explorer-list::-webkit-scrollbar, .clip-hist::-webkit-scrollbar{width:8px;height:8px}
-main::-webkit-scrollbar-track, .sidebar::-webkit-scrollbar-track, .explorer-list::-webkit-scrollbar-track, .clip-hist::-webkit-scrollbar-track{background:transparent}
-main::-webkit-scrollbar-thumb, .sidebar::-webkit-scrollbar-thumb, .explorer-list::-webkit-scrollbar-thumb, .clip-hist::-webkit-scrollbar-thumb{
+main::-webkit-scrollbar, .sidebar::-webkit-scrollbar, .explorer-list::-webkit-scrollbar{width:8px;height:8px}
+main::-webkit-scrollbar-track, .sidebar::-webkit-scrollbar-track, .explorer-list::-webkit-scrollbar-track{background:transparent}
+main::-webkit-scrollbar-thumb, .sidebar::-webkit-scrollbar-thumb, .explorer-list::-webkit-scrollbar-thumb{
   background:#3A342A;border-radius:999px;border:2px solid transparent;background-clip:padding-box;
 }
-main::-webkit-scrollbar-thumb:hover, .sidebar::-webkit-scrollbar-thumb:hover, .explorer-list::-webkit-scrollbar-thumb:hover, .clip-hist::-webkit-scrollbar-thumb:hover{background:#524938}
+main::-webkit-scrollbar-thumb:hover, .sidebar::-webkit-scrollbar-thumb:hover, .explorer-list::-webkit-scrollbar-thumb:hover{background:#524938}
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:28px}
 .eyebrow{color:var(--gold);font-size:9.5px;letter-spacing:2px;font-weight:600}
 .top h1{font-size:23px;margin:6px 0 0;letter-spacing:-.4px;font-weight:600}
@@ -328,6 +328,10 @@ main::-webkit-scrollbar-thumb:hover, .sidebar::-webkit-scrollbar-thumb:hover, .e
   box-shadow:inset 3px 0 0 #e0a43b;
 }
 .exrow.flash{animation:exFlash .55s ease}
+/* Windows-style ghost for pending cut (still clickable; Esc cancels). */
+.exrow.is-cut{opacity:.38;filter:grayscale(.15)}
+.exrow.is-cut:hover{opacity:.5}
+.exrow.is-cut.on{opacity:.48}
 @keyframes exFlash{
   0%{background:rgba(143,224,176,.18)}
   100%{background:transparent}
@@ -412,6 +416,69 @@ main::-webkit-scrollbar-thumb:hover, .sidebar::-webkit-scrollbar-thumb:hover, .e
   animation:spin .7s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
+
+.ex-menu{
+  position:fixed;z-index:80;min-width:188px;max-width:260px;
+  padding:6px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(14,16,22,.97);
+  box-shadow:0 20px 48px rgba(0,0,0,.58), 0 0 0 1px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
+  display:flex;flex-direction:column;gap:2px;
+  animation:exMenuIn .12s ease;
+}
+@keyframes exMenuIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.ex-menu button{
+  display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:#dce5f0;
+  font:inherit;font-size:12.5px;font-weight:500;text-align:left;
+  padding:8px 10px;border-radius:8px;cursor:pointer;
+  transition:background .12s ease,color .12s ease;
+}
+.ex-menu button .i{width:14px;height:14px;color:#8b98a8;flex-shrink:0}
+.ex-menu button span{
+  min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.ex-menu button:hover:not(:disabled){
+  background:rgba(224,164,59,.14);color:#f7f1e6;
+}
+.ex-menu button:hover:not(:disabled) .i{color:#e0a43b}
+.ex-menu button:disabled{opacity:.38;cursor:default}
+.ex-menu button.ex-menu-danger{color:#f0b4a8}
+.ex-menu button.ex-menu-danger .i{color:#d8796a}
+.ex-menu button.ex-menu-danger:hover:not(:disabled){
+  background:rgba(200,70,55,.16);color:#ffd9d2;
+}
+.ex-menu-sep{
+  height:1px;margin:4px 6px;background:rgba(255,255,255,.08);flex-shrink:0;
+}
+
+.ex-dialog-backdrop{
+  position:fixed;inset:0;z-index:90;display:grid;place-items:center;
+  background:rgba(4,6,10,.64);padding:16px;
+  animation:fade .14s ease;
+}
+.ex-dialog{
+  width:min(400px,100%);border-radius:16px;border:1px solid rgba(255,255,255,.12);
+  background:rgba(16,18,24,.98);box-shadow:0 24px 60px rgba(0,0,0,.55);
+  padding:16px;display:flex;flex-direction:column;gap:14px;
+  animation:explorerIn .18s ease;
+}
+.ex-dialog.danger{border-color:rgba(200,70,55,.28)}
+.ex-dialog-head strong{display:block;font-size:15px;color:#f3efe7;font-weight:600}
+.ex-dialog-head span{
+  display:block;margin-top:6px;font-size:12.5px;line-height:1.45;color:#9eb0c3;
+}
+.ex-dialog-field{display:flex;flex-direction:column;gap:6px}
+.ex-dialog-field > span{font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:#7f8b9a;font-weight:600}
+.ex-dialog-field input{
+  width:100%;border-radius:10px;border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.04);color:#e8eef5;font:inherit;font-size:13px;
+  padding:10px 12px;outline:none;
+  transition:border-color .12s ease,box-shadow .12s ease;
+}
+.ex-dialog-field input:focus{
+  border-color:rgba(224,164,59,.45);box-shadow:0 0 0 3px rgba(224,164,59,.12);
+}
+.ex-dialog-actions{display:flex;justify-content:flex-end;gap:8px;padding-top:2px}
 
 /* ---- File tools (notepad / image / pdf) ---- */
 .ft-shell{
@@ -563,17 +630,6 @@ main::-webkit-scrollbar-thumb:hover, .sidebar::-webkit-scrollbar-thumb:hover, .e
 .ft-dialog-text small{font-size:11px;color:#8b98a8;line-height:1.35}
 .ft-dialog-item .i{color:#7f8b9a;flex-shrink:0}
 
-.clip-panel{position:absolute;top:12px;right:12px;width:min(360px,92%);z-index:6;background:rgba(12,14,18,.96);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:12px;backdrop-filter:blur(12px);box-shadow:0 18px 40px rgba(0,0,0,.45);color:#e8eef5}
-.clip-head{display:flex;justify-content:space-between;gap:10px;margin-bottom:10px}
-.clip-head strong{display:block;font-size:12.5px}
-.clip-head span{display:block;font-size:10.5px;color:#9eb0c3;margin-top:4px;line-height:1.4}
-.switchrow{display:flex;align-items:center;gap:8px;font-size:11.5px;margin-bottom:10px}
-.clip-current{border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;background:rgba(255,255,255,.03)}
-.clip-current code,.clip-hist code{display:block;font-size:11px;word-break:break-all;color:#f3efe7;font-family:ui-monospace,Consolas,monospace;margin:6px 0}
-.clip-acts{display:flex;gap:6px;flex-wrap:wrap}
-.clip-hist{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px;max-height:180px;overflow:auto}
-.clip-hist li{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;padding:8px;border-radius:8px;background:rgba(255,255,255,.04)}
-.clip-hist small{grid-column:1;color:#7f8b9a;font-size:10px}
 .kb-hint{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;background:rgba(12,18,26,.88);border:1px solid rgba(224,164,59,.35);color:#e8eef5;font-size:11px;white-space:nowrap;max-width:90%}
 
 .iconbtn:disabled,.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
