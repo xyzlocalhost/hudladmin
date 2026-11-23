@@ -1,5 +1,22 @@
 export type DeviceStatus = "online" | "stale" | "offline";
 
+export type AgentSetupStepStatus = "pending" | "active" | "done" | "error" | "skipped";
+
+export type AgentSetupStep = {
+  id: string;
+  label: string;
+  status: AgentSetupStepStatus;
+  at?: string | null;
+};
+
+export type AgentSetup = {
+  phase: string;
+  detail: string;
+  error?: string | null;
+  updated_at?: string;
+  steps: AgentSetupStep[];
+};
+
 export type Device = {
   id: string;
   name: string;
@@ -20,6 +37,8 @@ export type Device = {
   rustdeskId?: string | null;
   /** Unattended password — owner-only; used for one-click Connect deep links. */
   rustdeskPassword?: string | null;
+  /** Live first-run / EXE setup timeline from the agent. */
+  setup?: AgentSetup | null;
 };
 
 export type AlertKind =
@@ -73,4 +92,5 @@ export type DbDevice = {
   ping_ms: number | null;
   uptime_seconds: number | null;
   role: string | null;
+  agent_setup?: AgentSetup | null;
 };

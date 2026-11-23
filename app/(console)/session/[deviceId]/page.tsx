@@ -6,6 +6,11 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FileExplorer } from "@/components/console/file-explorer";
 import { useFleetContext } from "@/components/console/fleet-context";
+import {
+  SetupProgress,
+  isSetupBusy,
+  isSetupFailed,
+} from "@/components/console/setup-progress";
 import { useToast } from "@/components/console/toast-context";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Ic } from "@/components/ui/icons";
@@ -306,56 +311,60 @@ export default function SessionDevicePage() {
 
           {!viewerOpen && !filesOpen && (
             <div className="session-stage">
-              <div className={`session-stage-card${sel.rustdeskId && sel.rustdeskPassword ? " ready" : ""}`}>
-                <div className="session-stage-ico" aria-hidden>
-                  <Ic name="monitor" />
+              {sel.setup && (isSetupBusy(sel.setup) || isSetupFailed(sel.setup)) ? (
+                <SetupProgress setup={sel.setup} />
+              ) : (
+                <div className={`session-stage-card${sel.rustdeskId && sel.rustdeskPassword ? " ready" : ""}`}>
+                  <div className="session-stage-ico" aria-hidden>
+                    <Ic name="monitor" />
+                  </div>
+                  {sel.rustdeskId && sel.rustdeskPassword ? (
+                    <>
+                      <strong>Ready to control {sel.name}</strong>
+                      <span>
+                        Opens the remote desktop <em>inside this page</em> — no second app, no approve click on the laptop.
+                      </span>
+                      <button
+                        className={`btn primary session-connect-cta${connectFlash ? " flash" : ""}`}
+                        type="button"
+                        disabled={viewerLoading}
+                        onClick={startConnect}
+                      >
+                        {viewerLoading ? (
+                          <>
+                            <span className="session-connect-spin" aria-hidden />
+                            Connecting…
+                          </>
+                        ) : (
+                          <>
+                            <Ic name="monitor" sm />
+                            Connect now
+                          </>
+                        )}
+                      </button>
+                      <small className="session-stage-hint">Password is copied for you when available</small>
+                    </>
+                  ) : sel.rustdeskId ? (
+                    <>
+                      <strong>ID known — password not synced yet</strong>
+                      <span>
+                        On the laptop run <code>cd client; .\run.ps1</code> once as Admin, wait one heartbeat, then Connect.
+                      </span>
+                      <button className="btn primary session-connect-cta" type="button" onClick={startConnect}>
+                        <Ic name="monitor" sm />
+                        Open viewer anyway
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <strong>Remote not set up on this laptop yet</strong>
+                      <span>
+                        On {sel.name}: run the Hudl agent once as Admin. It enrolls immediately, then you&apos;ll see live setup steps here while remote desktop installs.
+                      </span>
+                    </>
+                  )}
                 </div>
-                {sel.rustdeskId && sel.rustdeskPassword ? (
-                  <>
-                    <strong>Ready to control {sel.name}</strong>
-                    <span>
-                      Opens the remote desktop <em>inside this page</em> — no second app, no approve click on the laptop.
-                    </span>
-                    <button
-                      className={`btn primary session-connect-cta${connectFlash ? " flash" : ""}`}
-                      type="button"
-                      disabled={viewerLoading}
-                      onClick={startConnect}
-                    >
-                      {viewerLoading ? (
-                        <>
-                          <span className="session-connect-spin" aria-hidden />
-                          Connecting…
-                        </>
-                      ) : (
-                        <>
-                          <Ic name="monitor" sm />
-                          Connect now
-                        </>
-                      )}
-                    </button>
-                    <small className="session-stage-hint">Password is copied for you when available</small>
-                  </>
-                ) : sel.rustdeskId ? (
-                  <>
-                    <strong>ID known — password not synced yet</strong>
-                    <span>
-                      On the laptop run <code>cd client; .\run.ps1</code> once as Admin, wait one heartbeat, then Connect.
-                    </span>
-                    <button className="btn primary session-connect-cta" type="button" onClick={startConnect}>
-                      <Ic name="monitor" sm />
-                      Open viewer anyway
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <strong>Remote not set up on this laptop yet</strong>
-                    <span>
-                      On {sel.name}: <code>cd client; .\run.ps1</code> once (Admin). That one command installs RustDesk + starts the Hudl agent.
-                    </span>
-                  </>
-                )}
-              </div>
+              )}
             </div>
           )}
 

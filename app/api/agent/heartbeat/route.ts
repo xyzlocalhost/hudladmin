@@ -19,6 +19,8 @@ type Body = {
   rustdesk_id?: string | null;
   rustdesk_password?: string | null;
   name?: string | null;
+  /** First-run / EXE setup timeline from the agent. */
+  setup?: Record<string, unknown> | null;
 };
 
 export async function POST(req: NextRequest) {
@@ -73,6 +75,9 @@ export async function POST(req: NextRequest) {
       patch.rustdesk_password = body.rustdesk_password;
     }
     if (body.name) patch.name = body.name;
+    if (body.setup && typeof body.setup === "object") {
+      patch.agent_setup = body.setup;
+    }
 
     const { error: upErr } = await admin.from("devices").update(patch).eq("id", deviceId);
 

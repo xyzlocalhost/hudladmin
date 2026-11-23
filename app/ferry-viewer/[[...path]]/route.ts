@@ -15,7 +15,7 @@ const UPSTREAM = (
 const VIEWER_PREFIX = "/ferry-viewer";
 const ID_HOST = new URL(UPSTREAM).hostname;
 /** EIP hbbs sometimes returns as relay — must use hostname for TLS SNI. */
-const RELAY_IP = process.env.RUSTDESK_RELAY_IP || "16.16.254.57";
+const RELAY_IP = process.env.RUSTDESK_RELAY_IP || "63.178.32.36";
 
 /** Soften AudioWorklet crash when a secure context still lacks a worklet path. */
 const HUDL_AUDIO_SHIM_JS = `
