@@ -5,12 +5,20 @@ import { useFleetContext } from "@/components/console/fleet-context";
 import { useToast } from "@/components/console/toast-context";
 import type { Device } from "@/lib/fleet-types";
 
-/** In-browser RustDesk viewer (Ferry on your self-hosted server). */
+/** Same-origin embed path (proxies Ferry and allows iframe framing). */
 export function rustdeskWebViewerUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_RUSTDESK_WEB_URL?.replace(/\/$/, "")
-    || "http://16.16.254.57:8080"
-  );
+  return "/ferry-viewer";
+}
+
+/** Same-origin Ferry tab with optional autofill query (uses Hudl bootstrap). */
+export function rustdeskWebExternalUrl(opts?: {
+  id?: string | null;
+  password?: string | null;
+}): string {
+  const url = new URL("/ferry-viewer/", "http://local.invalid");
+  if (opts?.id) url.searchParams.set("id", opts.id);
+  if (opts?.password) url.searchParams.set("password", opts.password);
+  return `${url.pathname}${url.search}`;
 }
 
 export function useOpenSession() {
@@ -39,5 +47,5 @@ export function useOpenSession() {
     fireToast(`Open Connect in the session view for ${d.name}.`);
   }
 
-  return { openSession, launchRustDesk, rustdeskWebViewerUrl, fireToast };
+  return { openSession, launchRustDesk, rustdeskWebViewerUrl, rustdeskWebExternalUrl, fireToast };
 }

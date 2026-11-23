@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Keep /ferry-viewer/ so Ferry relative assets resolve under the proxy.
+  skipTrailingSlashRedirect: true,
   // Allow LAN devices to load /_next/* assets in `next dev`.
   // Hostname only (no scheme/port). Add new device/host IPs here as needed.
   allowedDevOrigins: [
