@@ -1,32 +1,42 @@
-# Hudl Front
+# Hudl web
 
-Personal control center for securely reaching your own devices, with a vault for logins you save yourself. This is the dashboard front end (demo data only).
+Personal fleet console. Live device heartbeats via Supabase; remote control via RustDesk (Phase 2).
 
-## Run it
+## Setup
+
+1. Create a Supabase project.
+2. Apply SQL migrations in [`supabase/migrations/`](supabase/migrations/) (core + `device_commands` for file explorer). SQL editor or `supabase db push` after `supabase link`.
+3. Copy [`.env.example`](.env.example) → `.env.local` and fill **publishable** + **secret** keys (not legacy anon/service_role).
+4. Enable Email auth in Supabase (disable confirm email for fastest local setup if you want).
+5. Install and run:
 
 ```bash
-npm install
-npm run dev
+yarn
+yarn dev
 ```
 
-Open http://localhost:3000
+6. Create the owner user in Supabase Auth (Dashboard → Authentication → Users), then sign in on `/login`.
+7. Note your user UUID if you want `HUDL_OWNER_USER_ID`.
 
-## Structure
+Without Supabase env vars the UI runs on **mock fleet** data (no login gate).
 
-- `app/layout.tsx` - root layout, loads Poppins via next/font
-- `app/globals.css` - all styling (warm graphite + gold theme)
-- `app/page.tsx` - the dashboard (client component, demo data)
+## Agent API
 
-## Making it real
+| Method | Path | Auth |
+| --- | --- | --- |
+| POST | `/api/agent/enroll` | header `x-hudl-enroll-secret: $AGENT_ENROLL_SECRET` |
+| POST | `/api/agent/heartbeat` | headers `x-hudl-device-id`, `x-hudl-device-token` |
+| POST | `/api/agent/commands/poll` | device headers — agent claims queued FS commands |
+| POST | `/api/agent/commands/:id/complete` | device headers — agent posts result |
+| POST | `/api/devices/:id/fs` | owner session — `roots` / `list` / `read` / `write` (waits for agent) |
 
-The three plug points are commented in `app/page.tsx`:
+Remote **Files** in a session uses the command queue (agent polls every ~2s). Built-in openers: Notepad, images, PDF, **WebM/MP4 video**, audio. Transfers capped at 32 MB.
 
-- `pairDevice` -> `POST /api/pair`, returns a one-time code from your desktop agent
-- `openSession` -> starts a RustDesk session for the paired device
-- `unlockVault` -> authenticates against your Vaultwarden backend
+See [`../client/README.md`](../client/README.md) for the Windows Python agent.
 
-Recommended backing engines:
+## RustDesk Connect
 
-- Remote screen + control: self-hosted RustDesk relay + its desktop agent
-- Credential vault: self-hosted Vaultwarden (never roll your own password crypto)
-- Dashboard + API routes + auth: this Next.js app
+When a device row has `rustdesk_id`, **Connect** / **Open RustDesk** launches:
+
+- `NEXT_PUBLIC_RUSTDESK_WEB_URL/?id=…` if set, else
+- `rustdesk://{id}` deep link to the desktop/mobile app

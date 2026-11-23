@@ -3,4 +3,9 @@
 /out
 .DS_Store
 *.log
-.env*
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+!.env.example
+

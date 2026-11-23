@@ -1,0 +1,58 @@
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+import { isSupabaseConfigured } from "./env";
+
+/**
+ * Refresh the auth session and gate the owner console.
+ * Called from root `proxy.ts` (Next.js Proxy convention).
+ */
+export async function updateSession(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request });
+
+  if (!isSupabaseConfigured()) {
+    return supabaseResponse;
+  }
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options),
+          );
+        },
+      },
+    },
+  );
+
+  // Keep session fresh — do not insert logic between createServerClient and getClaims.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims;
+
+  const path = request.nextUrl.pathname;
+  const isLogin = path.startsWith("/login");
+  const isAgentApi = path.startsWith("/api/agent");
+
+  if (isAgentApi) return supabaseResponse;
+
+  if (!user && !isLogin) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  if (user && isLogin) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
+  }
+
+  return supabaseResponse;
+}

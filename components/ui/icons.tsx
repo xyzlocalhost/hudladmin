@@ -1,0 +1,44 @@
+import type { ReactNode } from "react";
+
+export const icons: Record<string, ReactNode> = {
+  overview: (<><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>),
+  monitor: (<><rect x="2" y="4" width="20" height="13" rx="2" /><path d="M8 21h8M12 17v4" /></>),
+  laptop: (<><rect x="4" y="3" width="16" height="12" rx="2" /><path d="M2 20h20" /></>),
+  devices: (<><rect x="4" y="3" width="16" height="12" rx="2" /><path d="M2 20h20M9 15l-1 5M15 15l1 5" /></>),
+  vault: (<><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z" /><path d="M9.5 12l1.8 1.8L15 10" /></>),
+  shield: (<path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z" />),
+  lock: (<><rect x="3" y="11" width="18" height="10" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></>),
+  activity: (<path d="M3 12h4l2 6 4-14 2 8h6" />),
+  power: (<path d="M12 2v8M6.5 6.5a8 8 0 1011 0" />),
+  clock: (<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>),
+  bell: (<><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.9 1.9 0 003.4 0" /></>),
+  logo: (<path d="M6 4v16M18 4v16M6 12h12" />),
+  alert: (<path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" />),
+  chevron: (<path d="M9 6l6 6-6 6" />),
+  chevronUp: (<path d="M18 15l-6-6-6 6" />),
+  folder: (<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />),
+  doc: (<><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 7h8M8 11h8M8 15h5" /></>),
+  globe: (<><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 000 18M12 3a14 14 0 010 18" /></>),
+  menu: (<path d="M4 6h16M4 12h16M4 18h10" />),
+  keyboard: (<><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M6 9h.01M10 9h.01M14 9h.01M8 13h8" /></>),
+  clipboard: (<><rect x="9" y="3" width="6" height="4" rx="1" /><rect x="5" y="5" width="14" height="16" rx="2" /></>),
+  fullscreen: (<path d="M8 3H5a2 2 0 00-2 2v3M16 3h3a2 2 0 012 2v3M8 21H5a2 2 0 01-2-2v-3M16 21h3a2 2 0 002-2v-3" />),
+  close: (<path d="M18 6 6 18M6 6l12 12" />),
+  eye: (<><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3" /></>),
+  copy: (<><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15V5a2 2 0 012-2h10" /></>),
+  battery: (<><rect x="2" y="7" width="18" height="10" rx="2" /><path d="M20 10v4M7 11h4" /></>),
+  signal: (<path d="M2 20h4V10H2zM10 20h4V4h-4zM18 20h4v-8h-4z" />),
+  terminal: (<><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M7 9l3 3-3 3M12 15h5" /></>),
+  quality: (<path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 16.3 7.1 18.2l.9-5.5-4-3.9L9.5 8z" />),
+  search: (<><circle cx="11" cy="11" r="7" /><path d="M20 20l-3-3" /></>),
+  upload: (<path d="M12 16V4M7 9l5-5 5 5M4 20h16" />),
+  download: (<path d="M12 4v12M7 11l5 5 5-5M4 20h16" />),
+  home: (<path d="M3 11l9-8 9 8M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9" />),
+  refresh: (<path d="M21 12a9 9 0 11-3-6.7M21 4v6h-6" />),
+  disk: (<><ellipse cx="12" cy="6" rx="8" ry="3" /><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" /></>),
+  filter: (<path d="M4 5h16l-6 7v5l-4 2v-7L4 5z" />),
+};
+
+export function Ic({ name, sm }: { name: string; sm?: boolean }) {
+  return <svg className={sm ? "i i-sm" : "i"} viewBox="0 0 24 24">{icons[name]}</svg>;
+}

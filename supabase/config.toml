@@ -1,0 +1,10 @@
+# Minimal Supabase CLI config for local/link workflows.
+# Apply migrations with: supabase db push  (after supabase link)
+
+project_id = "hudl"
+
+[api]
+enabled = true
+
+[db]
+major_version = 15
