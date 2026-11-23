@@ -110,6 +110,7 @@ export default function SessionDevicePage() {
     setViewerOpen(false);
     setViewerLoading(false);
     setConnectFlash(false);
+    setEndConfirmOpen(false);
   }, [deviceId]);
 
   useEffect(() => {
