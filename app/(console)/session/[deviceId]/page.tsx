@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { FileExplorer } from "@/components/console/file-explorer";
 import { useFleetContext } from "@/components/console/fleet-context";
 import { useToast } from "@/components/console/toast-context";
@@ -27,6 +28,7 @@ export default function SessionDevicePage() {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerLoading, setViewerLoading] = useState(false);
   const [connectFlash, setConnectFlash] = useState(false);
+  const [endConfirmOpen, setEndConfirmOpen] = useState(false);
   const [isFs, setIsFs] = useState(false);
   const rdpRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -65,6 +67,17 @@ export default function SessionDevicePage() {
   function closeViewer() {
     setViewerOpen(false);
     setViewerLoading(false);
+  }
+
+  function confirmEndSession() {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+    closeViewer();
+    setFilesOpen(false);
+    setEndConfirmOpen(false);
+    fireToast("Session ended.");
+    router.push("/devices");
   }
 
   useEffect(() => {
@@ -392,16 +405,56 @@ export default function SessionDevicePage() {
             type="button"
             className="btn danger small"
             style={{ marginLeft: "auto" }}
-            onClick={() => {
-              if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-              fireToast("Session ended.");
-              router.push("/devices");
-            }}
+            onClick={() => setEndConfirmOpen(true)}
           >
             <Ic name="close" sm />End session
           </button>
         </div>
       </div>
+
+      {endConfirmOpen
+        && typeof document !== "undefined"
+        && createPortal(
+          <div
+            className="ex-dialog-backdrop"
+            role="presentation"
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) setEndConfirmOpen(false);
+            }}
+          >
+            <div
+              className="ex-dialog danger"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="end-session-title"
+            >
+              <div className="ex-dialog-head">
+                <strong id="end-session-title">End session?</strong>
+                <span>
+                  This closes the remote viewer and returns you to Devices
+                  {sel ? ` — ${sel.name}` : ""}.
+                </span>
+              </div>
+              <div className="ex-dialog-actions">
+                <button
+                  className="btn small"
+                  type="button"
+                  onClick={() => setEndConfirmOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn small danger"
+                  type="button"
+                  onClick={confirmEndSession}
+                >
+                  End session
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
     </section>
   );
 }
