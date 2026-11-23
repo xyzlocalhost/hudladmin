@@ -5,7 +5,7 @@ export const titles: Record<string, [string, string]> = {
   devices: ["My devices", "Every laptop running the Hudl agent. Search, filter, connect."],
   session: ["Remote screen", "Control the selected machine — stream and files."],
   alerts: ["Alerts", "Missed check-ins, battery, disk, sessions, and vault events."],
-  vault: ["Credential vault", "Your logins, scoped to devices — search scales past hundreds."],
+  vault: ["Credential vault", "Coming soon — device-scoped logins and secrets."],
   activity: ["Activity logs", "Sessions, agent signals, files, and vault access."],
 };
 
