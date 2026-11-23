@@ -9,8 +9,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Hudl Front — Remote Workspace",
-  description: "Personal control center for your own devices",
+  title: "Hudl — Your fleet",
+  description: "Personal control center for your Windows devices",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
