@@ -38,6 +38,12 @@ const HUDL_AUDIO_SHIM_JS = `
 
 const HUDL_BOOTSTRAP_JS = `
 (function () {
+  // Drop Ferry's PWA worker so it can't keep an old ID-server host cached.
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      regs.forEach(function (r) { r.unregister(); });
+    }).catch(function () {});
+  }
   var MSG = "hudl:connect";
   var started = false;
 
@@ -144,9 +150,17 @@ function rewriteHtmlAssets(html: string): string {
     /\b(href|src)=["'](?!https?:|\/\/|\/|#|data:|blob:|mailto:)([^"']+)["']/gi,
     (_m, attr: string, path: string) => `${attr}="${VIEWER_PREFIX}/${path.replace(/^\.\//, "")}"`,
   );
+  // Bust Ferry SW / browser cache so ID server host updates apply.
+  out = out.replace(
+    /\b(href|src)="(\/ferry-viewer\/(?:config\.js|app\.js|sw\.js)[^"]*)"/gi,
+    (_m, attr: string, path: string) => {
+      const sep = path.includes("?") ? "&" : "?";
+      return `${attr}="${path}${sep}v=rd1"`;
+    },
+  );
   if (!out.includes("hudl-audio-shim.js")) {
     out = out.replace(
-      /<script[^>]*src="[^"]*config\.js"[^>]*><\/script>/i,
+      /<script[^>]*src="[^"]*config\.js[^"]*"[^>]*><\/script>/i,
       `<script src="${VIEWER_PREFIX}/hudl-audio-shim.js"></script>\n    $&`,
     );
   }
@@ -224,14 +238,27 @@ async function proxyFerry(req: NextRequest, pathParts: string[] | undefined) {
     return new NextResponse(html, { status: upstream.status, headers });
   }
 
-  // ID/relay ports are TLS-only (Caddy). Force wss even on http://localhost Hudl.
+  // TLS-only ID/relay on Caddy — pin host + wss (ignore stale IP in upstream config).
   if (suffix === "config.js") {
-    let body = await upstream.text();
-    if (body.includes("RUSTDESK_WEB_CONFIG")) {
-      body = `${body}\nwindow.RUSTDESK_WEB_CONFIG = Object.assign({}, window.RUSTDESK_WEB_CONFIG, { wss: true });\n`;
+    const idServer = new URL(UPSTREAM).hostname;
+    let key = process.env.NEXT_PUBLIC_RUSTDESK_KEY
+      || "X6PHmyWPbmUvXpAl4wmE2+v0VItplnThGGVhS2kRDvI=";
+    try {
+      const raw = await upstream.text();
+      const match = raw.match(/RUSTDESK_WEB_CONFIG\s*=\s*(\{[\s\S]*?\})\s*;/);
+      if (match) {
+        const parsed = JSON.parse(match[1]) as { key?: string };
+        if (parsed.key) key = parsed.key;
+      }
+    } catch {
+      /* keep fallback key */
     }
+    const body = `window.RUSTDESK_WEB_CONFIG = ${JSON.stringify({ idServer, key, wss: true })};\n`;
+    headers.set("content-type", "application/javascript; charset=utf-8");
+    headers.set("cache-control", "no-store");
     headers.delete("content-length");
-    return new NextResponse(body, { status: upstream.status, headers });
+    headers.delete("etag");
+    return new NextResponse(body, { status: 200, headers });
   }
 
   return new NextResponse(upstream.body, {
