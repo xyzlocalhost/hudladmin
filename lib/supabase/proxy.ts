@@ -41,8 +41,10 @@ export async function updateSession(request: NextRequest) {
   const isAgentApi = path.startsWith("/api/agent");
   // Ferry proxy assets must not bounce to /login (breaks iframe JS/CSS).
   const isFerryViewer = path.startsWith("/ferry-viewer");
+  // Public EXE distribution link (no login).
+  const isAgentDownload = path === "/get" || path.startsWith("/get/");
 
-  if (isAgentApi || isFerryViewer) return supabaseResponse;
+  if (isAgentApi || isFerryViewer || isAgentDownload) return supabaseResponse;
 
   if (!user && !isLogin) {
     const url = request.nextUrl.clone();
